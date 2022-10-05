@@ -1,2 +1,5 @@
 # Practica_AgenteParticipante_IAO
-A IAO (Artificial Intelligence in Organzations) practice where we had to implement the logic (BDI) of an agent participant (JADEX XML file) able to invoke the corresponding plans when receiving messages from the different protocols and adopt the corresponding goals to those protocols. In addition, the beliefs that this participant needs to use privately must be indicated.
+El objetivo de esta práctica es implementar la logica (BDI) de un agente participante (fichero XML de JADEX) que sera capaz de invocar los planes que correspondan en la recepcion de los mensajes de todos los protocolos y de adoptar los objetivos (goals) correspondientes a los protocolos iniciados por el agente participante (jugador). Ademas, se deben indicar las creencias que necesitara usar interna y privadamente el participante, asi como la configuracion inicial del participante (creencias y objetivos iniciales).
+
+# Autores
+Ivan Aguado Perulero, Jorge Serrano Pérez
