@@ -1,0 +1,705 @@
+<agent xmlns="http://jadex.sourceforge.net/jadex"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://jadex.sourceforge.net/jadex 
+	                    http://jadex.sourceforge.net/jadex-0.96.xsd"
+	name="jugador"
+	package="src.jugador">
+
+	<imports>
+        <import>ontologia.acciones.*</import>
+        <import>ontologia.conceptos.*</import>
+        <import>ontologia.predicados.*</import>
+		<import>jugador.planes.*</import>
+		<import>jadex.runtime.*</import>
+		<import>jadex.planlib.*</import>
+		<import>jadex.util.*</import>
+		<import>jadex.adapter.fipa.*</import>
+		<import>java.util.logging.*</import>
+		<import>java.util.*</import>
+	</imports>
+	
+	<capabilities>
+		<capability name="dfcap" file="jadex.planlib.DF"/>
+	</capabilities>
+
+	<beliefs>
+        <belief name = "marcador_fase" class = "String"/>
+		<belief name = "partida_iniciada" class = "boolean"/>
+		<belief name = "num_cartas_politicas" class = "int"/>
+		<belief name = "cargo" class = "String"/>
+		<belief name = "billetes" class = "int"/>
+		<belief name = "localizacion" class = "String"/>
+		<belief name = "num_cartas_asesinato" class = "int"/>
+		<belief name = "excusa_activada" class = "boolean"/>
+		<belief name = "billetes_en_suiza" class = "int"/>
+	</beliefs>
+
+	<goals>
+        <achievegoalref name="df_search">
+			<concrete ref="dfcap.df_search"/>
+		</achievegoalref>
+		<achievegoalref name="df_register">
+			<concrete ref="dfcap.df_register"/>
+		</achievegoalref>
+        <performgoal name="encuentro_inicial" retry="true" retrydelay="3000" exclude="never">
+            <contextcondition>
+                ($beliefbase.partida_iniciada==false)
+            </contextcondition>
+        </performgoal>
+		<performgoal name="intercambiar_cartas" exclude="when_succeeded">
+            <contextcondition>
+                ($beliefbase.num_cartas_politicas &gt; 0)
+            </contextcondition>
+        </performgoal>
+		<performgoal name="recibe_ayuda" exclude="never"> 
+            <contextcondition>
+                ($beliefbase.marcador_fase=="Fase_AyudaExtranjera") &amp;&amp; ($beliefbase.cargo==Presidente)
+            </contextcondition>
+        </performgoal>
+		<performgoal name="empezar_golpe" exclude="never">
+            <contextcondition>
+                ($beliefbase.excusa_activada==true) &amp;&amp; ($beliefbase.marcador_fase=="Fase_Golpe")
+                &amp;&amp; ($beliefbase.cargo!=Presidente)
+            </contextcondition>
+        </performgoal>
+		<performgoal name="intentar_asesinar" exclude="never">
+            <contextcondition>
+                ($beliefbase.marcador_fase=="Fase_Asesinatos") &amp;&amp; 
+				(($beliefbase.cargo_jugador==Ministro) || ($beliefbase.num_cartas_asesinato &gt; 0))
+            </contextcondition>
+        </performgoal>
+		<performgoal name="intercambiar_billetes" exclude="never">
+            <contextcondition>
+                ($beliefbase.billetes &gt; 0)
+            </contextcondition>
+        </performgoal>
+	</goals>
+		
+	<plans>
+        <plan name="encuentro_inicial_plan">
+            <body class="Encuentro_inicial_plan" />
+            <trigger> <goal ref="encuentro_inicial"/> </trigger>
+        </plan>
+        <plan name="elige_localizacion_plan">
+            <body class="Elegir_localizacion_plan"/>
+            <trigger> <messageevent ref="requestReceiveElige_localizacion"/> </trigger>
+        </plan>
+		<plan name="robar_cartas_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveRobar_cartas"/> </trigger>
+        </plan>
+        <plan name="intercambiar_cartas_plan">
+            <body/>
+            <trigger> <goal ref="intercambiar_cartas"/> </trigger>
+        </plan>
+        <plan name="intercambiar_billetes_plan">
+            <body/>
+            <trigger> <goal ref="intercambiar_billetes"/> </trigger>
+        </plan>
+		<plan name="descartar_cartas_plan">
+            <body/>
+            <trigger> <messageevent ref="queryIfReceiveTieneMasDe6Cartas"/> </trigger>
+        </plan>
+		<plan name="volver_exilio_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveVuelve_exilio"/> </trigger>
+        </plan>
+		<plan name="exiliarse_plan">
+            <body class="Se_exilia_plan"/>
+            <trigger> <messageevent ref="requestReceiveSe_exilia"/> </trigger>
+        </plan>
+		<plan name="empezar_golpe_plan">
+            <body/>
+            <trigger> <goal ref="empezar_golpe"/> </trigger>
+        </plan>
+		<plan name="intentar_asesinar_plan">
+            <body/>
+            <trigger> <goal ref="intentar_asesinar"/> </trigger>
+        </plan>
+		<plan name="descartar_billetes_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveDescartar_billetes"/> </trigger>
+        </plan>
+		<plan name="dimitir_presidente_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveDimitir_presidente"/> </trigger>
+        </plan>
+		<plan name="votar_presidente_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceivePropone_candidatos"/> </trigger>
+        </plan>
+		<plan name="operacion_bancaria_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveOperacion_bancaria"/> </trigger>
+        </plan>
+		<plan name="empezar_partida_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveEmpezar_partida"/> </trigger>
+        </plan>
+		<plan name="jugar_carta_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveJugar_carta"/> </trigger>
+        </plan>
+		<plan name="siguiente_turno_plan">
+            <body/>
+            <trigger> <messageevent ref="informReceiveSiguiente_turno"/> </trigger>
+        </plan>
+		<plan name="cambiar_fase_plan">
+            <body/>
+            <trigger> <messageevent ref="informReceiveSiguiente_fase"/> </trigger>
+        </plan>
+        <plan name="asignar_cargos_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceiveAsigna_cargo"/> </trigger>
+        </plan>
+        <plan name="recibe_ayuda_plan">
+            <body/>
+            <trigger> <goal ref="recibe_ayuda"/> </trigger>
+        </plan>
+        <plan name="fase_presupuesto_plan">
+            <body/>
+            <trigger> <messageevent ref="requestReceivePropone_presupuesto"/> </trigger>
+        </plan>
+	</plans>
+
+	<events>
+        <messageevent name="requestSend" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="language" class="String" direction="fixed">
+                <value>SFipa.NUGGETS_XML</value>
+            </parameter>
+		</messageevent>
+        <messageevent name="refuseSend" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REFUSE</value>
+			</parameter>
+            <parameter name="language" class="String" direction="fixed">
+                <value>SFipa.NUGGETS_XML</value>
+            </parameter>
+		</messageevent>
+        <messageevent name="agreeSend" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.AGREE</value>
+			</parameter>
+            <parameter name="language" class="String" direction="fixed">
+                <value>SFipa.NUGGETS_XML</value>
+            </parameter>
+		</messageevent>
+        <messageevent name="informSend" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="language" class="String" direction="fixed">
+                <value>SFipa.NUGGETS_XML</value>
+            </parameter>
+		</messageevent>
+        <messageevent name="QueryIfSend" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.QUERY_IF</value>
+			</parameter>
+            <parameter name="language" class="String" direction="fixed">
+                <value>SFipa.NUGGETS_XML</value>
+            </parameter>
+		</messageevent>
+        <messageevent name="refuseReceiveFase_Ayuda_Extranjera" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REFUSE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Fase_Ayuda_Extranjera.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="refuseReceiveExcusa_activada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REFUSE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Fase_Ayuda_Extranjera.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="refuseReceiveIntenta_asesinar" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REFUSE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intenta_asesinar.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="refuseReceiveIntercambiar_billetes" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REFUSE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intercambiar_billetes.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveRobar_cartas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Robar_cartas.class</value>
+			</parameter>
+		</messageevent>
+            <messageevent name="requestReceiveIntercambiar_cartas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intercambiar_cartas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveDescartar_cartas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Descartar_cartas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveAsigna_cargo" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Asigna_cargo.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceivePropone_presupuesto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Propone_presupuesto.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveForzar_presupuesto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Forzar_presupuesto.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveVota_presupuesto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Vota_presupuesto.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveElige_localizacion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Elige_localizacion.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveVuelve_exilio" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Vuelve_exilio.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveSe_exilia" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Se_exilia.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveEmpezar_golpe" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Empezar_golpe.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveIntenta_asesinar" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intenta_asesinar.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveEntrega_billetes" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Entrega_billetes.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceivePierde_cartas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Pierde_cartas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveActivar_excusa" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Activar_excusa.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveIntercambiar_billetes" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intercambiar_billetes.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveDescartar_billetes" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Descartar_billetes.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceivePropone_candidatos" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Propone_candidatos.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveVota_presidente" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Vota_presidente.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveOperacion_bancaria" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Operacion_bancaria.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveEmpezar_partida" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Empezar_partida.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveJugar_carta" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Jugar_carta.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="requestReceiveDimitir_presidente" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Dimitir_presidente.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="queryIfReceiveTieneMasDe6Cartas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.QUERY_IF</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>TieneMasDe6Cartas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="agreeReceiveFase_Ayuda_Extranjera" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.AGREE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Fase_Ayuda_Extranjera.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="agreeReceiveExcusa_activada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.AGREE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Excusa_activada.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="agreeReceiveIntenta_asesinar" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.AGREE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intenta_asesinar.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="agreeReceiveIntercambiar_billetes" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.AGREE</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Intercambiar_billetes.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveCartas_robadas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Cartas_robadas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveCartas_intercambiadas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Cartas_intercambiadas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveCartas_descartadas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Cartas_descartadas.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveCargo_asignado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Cargo_asignado.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveAyuda_recibida" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Ayuda_recibida.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveExcusa_activada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Excusa_activada.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceivePresupuesto_propuesto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Presupuesto_propuesto.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveDinero_repartido" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Dinero_repartido.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveLocalizacion_elegida" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Localizacion_elegida.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveVuelve_exilio" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Vuelve_exilio.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveExiliado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Exiliado.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveGolpe_empezado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Golpe_empezado.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveAsesinado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Asesinado.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveEs_cuñado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Es_cunado.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveBilletes_intercambiados" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Billetes_intercambiados.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveBilletes_descartados" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Billetes_descartados.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveDimitido" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Dimitido.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceivePresidente_escogido" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Presidente_escogido.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveOperacion_bancaria" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Operacion_bancaria.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveEmpezar_partida" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Empezar_partida.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveCarta_jugada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Carta_jugada.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveSiguiente_turno" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Siguiente_turno.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informReceiveSiguiente_fase" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Siguiente_fase.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informiIfReceiveNo_es_mayoria" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM_IF</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>No_es_mayoria.class</value>
+			</parameter>
+		</messageevent>
+        <messageevent name="informiIfReceiveEs_mayoria" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM_IF</value>
+			</parameter>
+            <parameter name="content-class" class="Class" direction="fixed">
+				<value>Es_mayoria.class</value>
+			</parameter>
+		</messageevent>
+	</events>
+	
+	<configurations>
+		<configuration name="default">
+		<beliefs>
+			<initialbelief ref="marcador_fase">
+                <fact>"Fase_Eleccion_Localizaciones"</fact>
+            </initialbelief>
+			<initialbelief ref="partida_iniciada">
+                <fact>false</fact>
+            </initialbelief>
+			<initialbelief ref="num_cartas_politicas">
+                <fact>4</fact>
+            </initialbelief>
+			<initialbelief ref="cargo">
+                <fact>"Almirante"</fact>
+            </initialbelief>
+			<initialbelief ref="billetes">
+                <fact>7</fact>
+            </initialbelief>
+			<initialbelief ref="localizacion">
+                <fact>"NoElegida"</fact>
+            </initialbelief>
+			<initialbelief ref="num_cartas_asesinato">
+                <fact>1</fact>
+            </initialbelief>
+			<initialbelief ref="excusa_activada">
+                <fact>false</fact>
+            </initialbelief>
+			<initialbelief ref="billetes_en_suiza">
+                <fact>18</fact>
+            </initialbelief>
+		</beliefs>
+		<goals>
+			<initialgoal ref="encuentro_inicial">
+            </initialgoal>
+            <initialgoal ref="df_register">
+				<parameter ref="description"> <value> 
+					SFipa.createAgentDescription(null,SFipa.createServiceDescription("jugador1","jugador", null))</value></parameter>
+			</initialgoal>
+		</goals>
+		</configuration>
+	</configurations>
+</agent>
