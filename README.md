@@ -1,0 +1,2 @@
+# Practica_AgenteParticipante_IAO
+A IAO (Artificial Intelligence in Organzations) practice where we had to implement the logic (BDI) of an agent participant (JADEX XML file) able to invoke the corresponding plans when receiving messages from the different protocols and adopt the corresponding goals to those protocols. In addition, the beliefs that this participant needs to use privately must be indicated.
